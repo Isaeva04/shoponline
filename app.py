@@ -1,4 +1,4 @@
-from flask import Flask,render_template
+from flask import Flask,render_template, request,redirect
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -13,9 +13,13 @@ class Item(db.Model):
     isActive = db.Column(db.Boolean, default=True)  # активный товар-есть в наличии. True проставляется автоматически
     #text = db.Column(db.Text, nullable=False)
 
+    def __repr__(self):
+        return self.title
+
 @app.route('/')
 def index():
-    return render_template('index.html')
+    items = Item.query.order_by(Item.price).all()
+    return render_template('index.html',data=items)
 
 @app.route('/about')
 def about():
@@ -25,9 +29,20 @@ def about():
 def contacts():
     return render_template('contacts.html')
 
-@app.route('/create')
+@app.route('/create', methods=['POST','GET'])
 def create():
-    return render_template('create.html')
+    if request.method=='POST':
+        title=request.form['title']
+        price=request.form['price']
+        item=Item(title=title,price=price)
+        try:
+            db.session.add(item)
+            db.session.commit()
+            return redirect('/')
+        except():
+            return "Произошла ошибка"
+    else:
+        return render_template('create.html')
 
 if __name__ == '__main__':
     with app.app_context():
